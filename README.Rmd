@@ -1,0 +1,45 @@
+---
+title: readnet
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+The goal of readnet is to provide tools for preprocessing network data (a companion to igraph, statnet, netdiffuseR, etc.)
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example}
+
+library(readnet)
+
+dat0 <- data.frame(
+    ego    = c("a", "b", "c"),
+    alter1 = c("b", NA, NA),
+    alter2 = NA,
+    time   = 0
+  )
+
+dat1 <- data.frame(
+  ego    = c("a", "b", "c"),
+  alter1 = c("b", "a", NA),
+  alter2 = c("c", NA, NA),
+  time   = 1
+  )
+
+dat <- rbind(dat0, dat1)
+dat
+
+survey_to_edgelist(dat, "ego", c("alter1", "alter2"), time = "time")
+```
