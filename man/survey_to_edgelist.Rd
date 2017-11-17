@@ -8,11 +8,11 @@ survey_to_edgelist(dat, ego.id, alter.id, group.id = NULL, time = NULL,
   group.sep = "-", time.sep = "-")
 }
 \arguments{
-\item{dat}{\code{data.frame}.}
+\item{dat}{A \code{data.frame} with the data to be read in.}
 
-\item{ego.id}{Character scalar.}
-
-\item{alter.id}{Character vector.}
+\item{ego.id, alter.id}{Character scalars. Names of the variables in \code{dat} that
+correspond to the ids of ego and alter. It does not need to be numeric
+(see details).}
 
 \item{group.id}{Character vector.}
 
@@ -31,6 +31,11 @@ and the second level by \code{time} (if provided).
 \description{
 The function grabs ego ids and its nominations and creates an edgelist
 in which the labels (ids) are recoded such that ids go from 1 to n.
+}
+\details{
+By default, \code{ego.id} and \code{alter.id} are transform to factor variables, so the
+user doesn't need to worry about giving individuals in the survey a special
+coding
 }
 \examples{
 

@@ -1,5 +1,6 @@
 #' This function takes a two-column matrix, generates factors and encodeds it
 #' into an integer matrix with an extra attribute: `labels`
+#' @noRd
 encode_mat <- function(x) {
 
   x      <- as.factor(c(x[, 1L], x[, 2L]))
@@ -15,12 +16,14 @@ encode_mat <- function(x) {
 
 #' This function takes a set of vectors and creates a unique id using all
 #' by pasting it.
+#' @noRd
 makegroups <- function(dat, group.id, sep) {
   apply(dat[, group.id, drop=FALSE], 1, paste0, collapse=sep)
 }
 
 #' This function coerces a set of variables in a data frame into character
 #' so that when that is turned into a factor, information is not loss.
+#' @noRd
 set_as_char <- function(dat, vars) {
 
   dat <- as.character(match.call()$dat)
@@ -36,13 +39,19 @@ set_as_char <- function(dat, vars) {
 #' The function grabs ego ids and its nominations and creates an edgelist
 #' in which the labels (ids) are recoded such that ids go from 1 to n.
 #'
-#' @param dat `data.frame`.
-#' @param ego.id Character scalar.
-#' @param alter.id Character vector.
+#' @param dat A `data.frame` with the data to be read in.
+#' @param ego.id,alter.id Character scalars. Names of the variables in `dat` that
+#' correspond to the ids of ego and alter. It does not need to be numeric
+#' (see details).
 #' @param group.id Character vector.
 #' @param time Character vector.
 #' @param group.sep Character scalar.
 #' @param time.sep Character scalar.
+#'
+#' @details
+#' By default, `ego.id` and `alter.id` are transform to factor variables, so the
+#' user doesn't need to worry about giving individuals in the survey a special
+#' coding
 #'
 #' @return If no `group.id` or `time` are provided, an integer matrix with
 #' two named columns (_ego_ and _alter_), and an attribute "`labels`". Otherwise
@@ -104,13 +113,62 @@ survey_to_edgelist <- function(
   if (length(time)) {
     time <- makegroups(dat, time, time.sep)
     ans  <- split.data.frame(ans, time)
-    ans  <- lapply(ans, function(a)
-      structure(a[complete.cases(a), ,drop=FALSE], labels=labels)
-      )
+    dat  <- split.data.frame(dat, time)
+
+    # Mapping the function
+    ans  <- Map(function(e, d) {
+
+      structure(
+        list(
+          edgelist = e[stats::complete.cases(e),,drop=FALSE],
+          labels   = labels,
+          data     = d[match(labels, d[[ego.id]]), , drop=FALSE]
+        ), class = c("rn_edgelist")
+        )
+    }, e = ans, d = dat)
+
   } else {
-    ans <- structure(ans[complete.cases(ans), ,drop=FALSE], labels=labels)
+
+    ans <- structure(
+      list(
+        edgelist = ans[stats::complete.cases(ans),,drop=FALSE],
+        labels   = labels,
+        data     = dat[match(labels, dat[[ego.id]]), , drop=FALSE]
+      ), class = c("rn_edgelist")
+    )
+
   }
 
+  # Returning including the data
   ans
+}
+
+#' Turn a
+#' @param x An object of class `rn_edgelist` or a list of that.
+#' @param ... Further arguments passed to [graph_from_data_frame](igraph:graph_from_data_frame)
+#' @export
+rn_edgelist_to_igraph <- function(x, ...)
+  UseMethod("rn_edgelist_to_igraph")
+
+#' @export
+rn_edgelist_to_igraph.list <- function(x, ...) {
+  lapply(x, rn_edgelist_to_igraph, ...)
+}
+
+#' @export
+rn_edgelist_to_igraph.rn_edgelist <- function(x, ...) {
+
+  # Creating the vertex matrix
+  vertices <- cbind(
+    data.frame(name = x$labels),
+    x$data
+  )
+
+  # Relabeling the edgelist...
+  edgelist   <- x$edgelist
+  edgelist[] <- x$labels[edgelist[]]
+
+  # Putting all together
+  igraph::graph_from_data_frame(edgelist, vertices = vertices, ...)
 
 }
