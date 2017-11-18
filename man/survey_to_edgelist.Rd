@@ -2,13 +2,14 @@
 % Please edit documentation in R/readnet.r
 \name{survey_to_edgelist}
 \alias{survey_to_edgelist}
+\alias{rn_edgelist}
 \title{Creates an edgelist (or a list of edgelist) from survey data}
 \usage{
-survey_to_edgelist(dat, ego.id, alter.id, group.id = NULL, time = NULL,
+survey_to_edgelist(data, ego.id, alter.id, group.id = NULL, time = NULL,
   group.sep = "-", time.sep = "-")
 }
 \arguments{
-\item{dat}{A \code{data.frame} with the data to be read in.}
+\item{data}{A \code{data.frame} with the data to be read in.}
 
 \item{ego.id, alter.id}{Character scalars. Names of the variables in \code{dat} that
 correspond to the ids of ego and alter. It does not need to be numeric

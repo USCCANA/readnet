@@ -34,10 +34,9 @@ test_that("Basic test", {
                      "alter1", "alter2", "time"),
           row.names = c(NA, 3L),
           class = "data.frame"
-        )
+        ),
+        graph.attrs=NULL
       ),
-      .Names = c("edgelist",
-                 "labels", "data"),
       class = "rn_edgelist"
     ),
     `1` = structure(
@@ -61,14 +60,29 @@ test_that("Basic test", {
           .Names = c("ego", "alter1", "alter2", "time"),
           row.names = 4:6,
           class = "data.frame"
-        )
+        ),
+        graph.attrs = NULL
       ),
-      .Names = c("edgelist",
-                 "labels", "data"),
       class = "rn_edgelist"
     )
   ), .Names = c("0", "1"))
 
   ans <- survey_to_edgelist(rbind(dat0, dat1), "ego", c("alter1", "alter2"), time = "time")
   expect_equal(ans, ans0)
+})
+
+test_that("igraph", {
+
+  set.seed(12)
+  ans0 <- igraph::barabasi.game(10)
+  igraph::vertex_attr(ans0, "name") <- as.character(1L:10L)
+  igraph::V(ans0)$x <- runif(10)
+
+  ans1 <- as_igraph(as_rn_edgelist(ans0))
+
+  expect_equal(igraph::as_adj(ans0), igraph::as_adj(ans1))
+  expect_equal(igraph::graph_attr(ans0), igraph::graph_attr(ans1))
+  expect_equal(igraph::edge_attr(ans0), igraph::edge_attr(ans1))
+  expect_equal(igraph::vertex_attr(ans0), igraph::vertex_attr(ans1))
+
 })

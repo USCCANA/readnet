@@ -34,12 +34,78 @@ set_as_char <- function(dat, vars) {
       env[[dat]][[v]] <- as.character(env[[dat]][[v]])
 }
 
+#' Function to coerce an object to class `edgelist`
+#' @noRd
+new_rn_edgelist <- function(
+  edgelist,
+  labels,
+  data,
+  graph.attrs = NULL,
+  ego.id = NULL,
+  checks = c("edgelist", "labels", "data")
+) {
+
+  # Automatic coercion
+  edgelist   <- unname(as.matrix(edgelist))
+  edgelist[] <- as.integer(edgelist[])
+  colnames(edgelist) <- c("ego", "alter")
+
+  labels     <- unname(as.character(unlist(labels, recursive = TRUE)))
+
+  data       <- as.data.frame(data)
+
+  n <- length(labels)
+
+  if ("labels" %in% checks)
+    if (any(is.na(labels)))
+      stop("Some `labels` are missing.", call. = FALSE)
+
+  if ("data" %in% checks)
+    if (nrow(data) != n)
+      stop("The number of observations in `data`, ", nrow(data), ", does not",
+           "  coincide with the number of labels extracted from the edgelist, ",
+           n, ". Yo probably have duplicated observations in `data`.", call. = FALSE)
+
+
+  if ("edgelist" %in% checks) {
+
+    # Complete cases
+    test <- which(!complete.cases(edgelist))
+    if (length(test))
+      stop("Some elements of the `edgelist` are missing.", call. = FALSE)
+
+    # Pointing to the labels
+    test <- range(edgelist)
+    if (test[1] < 0 | test[2] > n)
+      stop("Some elements of the `edgelist` have id values out of range (1 or n).",
+           call. = FALSE)
+
+  }
+
+  # If to be sorted
+  if (!length(ego.id))
+    data <- data[match(labels, data[[ego.id]]), , drop=FALSE]
+
+
+  # Creating the object
+  structure(
+    list(
+      edgelist    = edgelist,
+      labels      = labels,
+      data        = data,
+      graph.attrs = graph.attrs
+    ),
+    class = "rn_edgelist"
+  )
+
+}
+
 #' Creates an edgelist (or a list of edgelist) from survey data
 #'
 #' The function grabs ego ids and its nominations and creates an edgelist
 #' in which the labels (ids) are recoded such that ids go from 1 to n.
 #'
-#' @param dat A `data.frame` with the data to be read in.
+#' @param data A `data.frame` with the data to be read in.
 #' @param ego.id,alter.id Character scalars. Names of the variables in `dat` that
 #' correspond to the ids of ego and alter. It does not need to be numeric
 #' (see details).
@@ -62,8 +128,9 @@ set_as_char <- function(dat, vars) {
 #'
 #' 1+1
 #' @export
+#' @aliases rn_edgelist
 survey_to_edgelist <- function(
-  dat,
+  data,
   ego.id,
   alter.id,
   group.id  = NULL,
@@ -78,32 +145,32 @@ survey_to_edgelist <- function(
   options(stringsAsFactors = FALSE)
 
   # Making sure everything is character
-  set_as_char(dat, c(ego.id, alter.id, group.id, time))
+  set_as_char(data, c(ego.id, alter.id, group.id, time))
 
   # Checking if group was specified, then call it recursively
   if (length(group.id)) {
 
     # Group tags
-    group.id <- makegroups(dat, group.id, group.sep)
+    group.id <- makegroups(data, group.id, group.sep)
 
     # Calling the function recursively
     return(
       lapply(
-        split.data.frame(dat, group.id),
+        split.data.frame(data, group.id),
         survey_to_edgelist,
         ego.id = ego.id, alter.id = alter.id, group.id = NULL, time = time)
       )
   }
 
   # Creates some containers
-  n          <- nrow(dat)
+  n          <- nrow(data)
   k          <- length(alter.id)
   ans        <- vector("list", k)
   names(ans) <- alter.id
 
   # Pastes the data
   for (id in alter.id) {
-    ans[[id]] <- cbind(dat[[ego.id]], dat[[id]])
+    ans[[id]] <- cbind(data[[ego.id]], data[[id]])
   }
 
   ans <- encode_mat(do.call(rbind, ans))
@@ -111,30 +178,31 @@ survey_to_edgelist <- function(
 
   # If time was provided
   if (length(time)) {
-    time <- makegroups(dat, time, time.sep)
+    time <- makegroups(data, time, time.sep)
     ans  <- split.data.frame(ans, time)
-    dat  <- split.data.frame(dat, time)
+    data  <- split.data.frame(data, time)
 
     # Mapping the function
     ans  <- Map(function(e, d) {
 
-      structure(
-        list(
-          edgelist = e[stats::complete.cases(e),,drop=FALSE],
-          labels   = labels,
-          data     = d[match(labels, d[[ego.id]]), , drop=FALSE]
-        ), class = c("rn_edgelist")
-        )
-    }, e = ans, d = dat)
+      new_rn_edgelist(
+        edgelist = e[stats::complete.cases(e),,drop=FALSE],
+        labels   = labels,
+        data     = d,
+        ego.id   = ego.id,
+        checks   = "data"
+      )
+
+    }, e = ans, d = data)
 
   } else {
 
-    ans <- structure(
-      list(
-        edgelist = ans[stats::complete.cases(ans),,drop=FALSE],
-        labels   = labels,
-        data     = dat[match(labels, dat[[ego.id]]), , drop=FALSE]
-      ), class = c("rn_edgelist")
+    ans <- new_rn_edgelist(
+      edgelist = ans[stats::complete.cases(ans),,drop=FALSE],
+      labels   = labels,
+      data     = data,
+      ego.id   = ego.id,
+      checks   = "data"
     )
 
   }
@@ -143,20 +211,21 @@ survey_to_edgelist <- function(
   ans
 }
 
-#' Turn a
+#' Coerce objects `rn_edgelist` to `igraph`
 #' @param x An object of class `rn_edgelist` or a list of that.
-#' @param ... Further arguments passed to [graph_from_data_frame](igraph:graph_from_data_frame)
+#' @param ... Further arguments passed to [`graph_from_data_frame`][igraph::graph_from_data_frame()]
+#' from the \pkg{igraph} R package.
 #' @export
-rn_edgelist_to_igraph <- function(x, ...)
-  UseMethod("rn_edgelist_to_igraph")
+as_igraph <- function(x, ...)
+  UseMethod("as_igraph")
 
 #' @export
-rn_edgelist_to_igraph.list <- function(x, ...) {
-  lapply(x, rn_edgelist_to_igraph, ...)
+as_igraph.list <- function(x, ...) {
+  lapply(x, as_igraph, ...)
 }
 
 #' @export
-rn_edgelist_to_igraph.rn_edgelist <- function(x, ...) {
+as_igraph.rn_edgelist <- function(x, ...) {
 
   # Creating the vertex matrix
   vertices <- cbind(
@@ -169,6 +238,38 @@ rn_edgelist_to_igraph.rn_edgelist <- function(x, ...) {
   edgelist[] <- x$labels[edgelist[]]
 
   # Putting all together
-  igraph::graph_from_data_frame(edgelist, vertices = vertices, ...)
+  ans <- igraph::graph_from_data_frame(edgelist, vertices = vertices, ...)
+
+  for (a in names(x$graph.attr))
+    igraph::graph_attr(ans, a) <- x$graph.attr[[a]]
+
+  ans
+
+}
+
+#' Coerce different graph objects to `rn_edgelist`
+#' @param x An object to be coerced to [rn_edgelist]
+#' @export
+as_rn_edgelist <- function(x) UseMethod("as_rn_edgelist")
+
+#' @export
+as_rn_edgelist.list <- function(x)
+  lapply(x, as_rn_edgelist)
+
+#' @export
+as_rn_edgelist.igraph <- function(x) {
+
+  labels <- igraph::vertex_attr(x, "name")
+  if (!length(labels))
+    labels <- as.character(1L:igraph::vcount(x))
+
+  new_rn_edgelist(
+    edgelist = igraph::as_edgelist(x, names = FALSE),
+    labels   = labels,
+    data     = igraph::as_data_frame(x, "vertices"),
+    graph.attr = igraph::graph_attr(x),
+    ego.id   = "name"
+  )
+
 
 }
