@@ -16,13 +16,43 @@ knitr::opts_chunk$set(
 
 The goal of readnet is to provide tools for preprocessing network data (a companion to igraph, statnet, netdiffuseR, etc.)
 
+
+Some of the features:
+
+*   Automatically handle coding for nodes, time and groups.
+
+*   If either `group.id` or `time` are specified, the function makes recursive calls, returning nested edgelists with the following structure:
+    
+    ```
+    object
+    --- group1:
+      --- edgelist in time1
+      --- ...
+      --- edgelist in time n
+    ...
+    --- group n:
+      --- edgelist in time1
+      --- ...
+      --- edgelist in time n
+    ```
+    
+*   Includes functions to coerce the resulting edgelists into igraph objects and viceversa.
+
+This project is on development and not published on CRAN yet.
+
+## Installation
+
+You can get `readnet` using devtools:
+
+```r
+devtools::install_github("USCCANA/readnet")
+```
+
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you how to solve a common problem. Suppose that you have a dataset that looks something like this:
 
-```{r example}
-
-library(readnet)
+```{r fakedata, echo=FALSE}
 
 dat0 <- data.frame(
     ego    = c("a", "b", "c"),
@@ -39,7 +69,30 @@ dat1 <- data.frame(
   )
 
 dat <- rbind(dat0, dat1)
-dat
-
-survey_to_edgelist(dat, "ego", c("alter1", "alter2"), time = "time")
 ```
+
+```{r}
+dat
+```
+
+This is, a survey with network nominations, and in this case, including a time variable. We can use the function `survey_to_edgelist` to process this data
+
+
+```{r example}
+library(readnet)
+(ans <- survey_to_edgelist(dat, "ego", c("alter1", "alter2"), time = "time"))
+```
+
+The previous returned a list with elements of class `rn_edgelist`. Each element contains an edgelist, a vector of labels, and a dataframe with data. We can use the function `as_igraph` to turn this into an igraph object
+
+```{r}
+as_igraph(ans)
+```
+
+and as a `rn_edgelist` back
+
+```{r}
+as_rn_edgelist(as_igraph(ans))
+```
+
+

@@ -267,7 +267,7 @@ as_rn_edgelist.igraph <- function(x) {
     edgelist = igraph::as_edgelist(x, names = FALSE),
     labels   = labels,
     data     = igraph::as_data_frame(x, "vertices"),
-    graph.attr = igraph::graph_attr(x),
+    graph.attrs = igraph::graph_attr(x),
     ego.id   = "name"
   )
 
