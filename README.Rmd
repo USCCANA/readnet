@@ -1,5 +1,4 @@
 ---
-title: readnet
 output: github_document
 ---
 
@@ -13,6 +12,8 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 ```
+
+# readnet
 
 The goal of readnet is to provide tools for preprocessing network data (a companion to igraph, statnet, netdiffuseR, etc.)
 

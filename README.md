@@ -1,7 +1,8 @@
-readnet
-================
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+readnet
+=======
+
 The goal of readnet is to provide tools for preprocessing network data (a companion to igraph, statnet, netdiffuseR, etc.)
 
 Some of the features:
@@ -106,17 +107,17 @@ The previous returned a list with elements of class `rn_edgelist`. Each element 
 ``` r
 as_igraph(ans)
 #> $`0`
-#> IGRAPH cf35df2 DN-- 3 1 -- 
+#> IGRAPH 8103e75 DN-- 3 1 -- 
 #> + attr: name (v/c), ego (v/c), alter1 (v/c), alter2 (v/c), time
 #> | (v/c)
-#> + edge from cf35df2 (vertex names):
+#> + edge from 8103e75 (vertex names):
 #> [1] a->b
 #> 
 #> $`1`
-#> IGRAPH f9fd88b DN-- 3 3 -- 
+#> IGRAPH d3b3db4 DN-- 3 3 -- 
 #> + attr: name (v/c), ego (v/c), alter1 (v/c), alter2 (v/c), time
 #> | (v/c)
-#> + edges from f9fd88b (vertex names):
+#> + edges from d3b3db4 (vertex names):
 #> [1] a->b b->a a->c
 ```
 

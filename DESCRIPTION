@@ -2,7 +2,7 @@ Package: readnet
 Version: 0.0.0.9000
 Title: What the Package Does (one line, title case)
 Description: What the package does (one paragraph).
-Authors@R: person("First", "Last", email = "first.last@example.com", role = c("aut", "cre"))
+Authors@R: person("George", "Vega Yon", email = "g.vegayon@gmail.com", role = c("aut", "cre"))
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
