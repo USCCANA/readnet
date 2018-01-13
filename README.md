@@ -37,6 +37,9 @@ devtools::install_github("USCCANA/readnet")
 Example
 -------
 
+Survey to Edgelist
+------------------
+
 This is a basic example which shows you how to solve a common problem. Suppose that you have a dataset that looks something like this:
 
 ``` r
@@ -103,17 +106,17 @@ The previous returned a list with elements of class `rn_edgelist`. Each element 
 ``` r
 as_igraph(ans)
 #> $`0`
-#> IGRAPH c8b4753 DN-- 3 1 -- 
+#> IGRAPH cf35df2 DN-- 3 1 -- 
 #> + attr: name (v/c), ego (v/c), alter1 (v/c), alter2 (v/c), time
 #> | (v/c)
-#> + edge from c8b4753 (vertex names):
+#> + edge from cf35df2 (vertex names):
 #> [1] a->b
 #> 
 #> $`1`
-#> IGRAPH 9775947 DN-- 3 3 -- 
+#> IGRAPH f9fd88b DN-- 3 3 -- 
 #> + attr: name (v/c), ego (v/c), alter1 (v/c), alter2 (v/c), time
 #> | (v/c)
-#> + edges from 9775947 (vertex names):
+#> + edges from f9fd88b (vertex names):
 #> [1] a->b b->a a->c
 ```
 
@@ -162,4 +165,43 @@ as_rn_edgelist(as_igraph(ans))
 #> 
 #> attr(,"class")
 #> [1] "rn_edgelist"
+```
+
+Setting up data for Siena (or alike :))
+---------------------------------------
+
+Here is an example that I built for [Prof. Kayla de la Haye](http://profiles.sc-ctsi.org/kayla.delahaye/). The idea here is that we have an edgelist with (finite) timestamps, a dataset with node attributes, and a list of ids that we would like to include in the data. The final output looks like lists of adjacency matrices of *n* × *n* (so we coded the edgelist as 1 through `n`) and `data.frame` of the attributes matching the positions of nodes in the edgelist (you may be able to do something similar with igraph, but the key difference here is that this function allows you to include time and returns the attribute dataset sorted accordignly):
+
+``` r
+library(readnet)
+library(dplyr)
+
+edgelist <- readxl::read_excel("playground/kayla/GROW_Edgelist clean for George.xlsx")
+dat      <- readr::read_tsv("playground/kayla/GROW Attribute Data for George.csv")
+ids2work <- readxl::read_excel("playground/kayla/GROW_Edgelist clean for George.xlsx", "NetMembersN400")
+
+
+# Catched an error:
+# Error: Missing ids in `data`. There are 610 observations in `data` and 613
+# identified ids. The observations that are missing in `data` are: '812398',
+# '812660', '831086'.
+
+# The same error shows up when I run it filtering the data:
+#
+#  Error: Missing ids in `data`. There are 394 observations in `data` and 397
+# identified ids. The observations that are missing in `data` are: '812398',
+# '812660', '831086'. So
+#
+# So I'll just drop it!
+
+dids <- unique(dat$study_id)
+edgelist <- filter(edgelist, (Sender %in% dids) & (Receiver %in% dids))
+
+ans <- edgelist_to_adjmat_w_attributes(
+  edgelist         = edgelist,
+  data             = dat,
+  data.idvar       = "study_id",
+  edgelist.timevar = "wave",
+  ids.to.keep      = ids2work$study_id
+  )
 ```
